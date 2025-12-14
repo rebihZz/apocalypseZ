@@ -1,0 +1,259 @@
+# -----------------------------------------------------------------------
+# ARMAS.SK - SISTEMA DE COMBATE Y UTILIDADES TÁCTICAS
+# -----------------------------------------------------------------------
+# Gestiona el disparo de armas con cargadores, daño melee, trampas y bengalas.
+
+options:
+    # Configuración de Daño y Alcance
+    dano_pistola: 4
+    dano_rifle: 8
+    alcance_pistola: 25 
+    alcance_rifle: 50
+    
+    # Configuración de Cargadores
+    capacidad_pistola: 12
+    capacidad_rifle: 30
+    tiempo_recarga_pistola: 2 seconds
+    tiempo_recarga_rifle: 3 seconds
+
+# --- SECCIÓN 0: RECETAS TÁCTICAS ---
+# Carga recetas específicas de combate.
+on load:
+    register new shapeless recipe for redstone torch named "&7&lBengala de Distracción" with lore "&8&oUso: Lanzar para atraer zombies" using redstone torch and gunpowder with id "craft_bengala"
+    register new shaped recipe for heavy weighted pressure plate named "&7&lTrampa de Osos" with lore "&8&oUso: Colocar en el suelo" and "&8&oEfecto: Inmoviliza y daña" using air, air, air, air, air, air, iron ingot, iron ingot and iron ingot with id "craft_trampa"
+
+# --- SECCIÓN 1: INICIALIZACIÓN DE CARGADORES ---
+on join:
+    if {cargador::pistola::%uuid of player%} is not set:
+        set {cargador::pistola::%uuid of player%} to {@capacidad_pistola}
+    if {cargador::rifle::%uuid of player%} is not set:
+        set {cargador::rifle::%uuid of player%} to {@capacidad_rifle}
+
+# --- SECCIÓN 2: ARMAS DE FUEGO ---
+# Lógica de disparo con gestión de cargador y recarga.
+on right click:
+    if player's tool is iron horse armor or golden horse armor:
+        set {_nombre} to uncolored name of player's tool
+        
+        # Detectamos si es un arma válida
+        if {_nombre} contains "Pistola" or "Rifle":
+            cancel event
+            
+            # 1. Verificar si ya está recargando
+            if {recargando::%uuid of player%} is true:
+                send action bar "&c⚠ Recargando... Espere." to player
+                play sound "block.iron_door.close" with pitch 2 at player
+                stop
+            
+            # 2. Configurar variables según el arma
+            if {_nombre} contains "Pistola":
+                set {_tipo} to "pistola"
+                set {_capacidad} to {@capacidad_pistola}
+                set {_tiempo_recarga} to {@tiempo_recarga_pistola}
+                set {_distancia} to {@alcance_pistola}
+                set {_daño} to {@dano_pistola}
+                set {_particula} to electric spark
+                set {_cooldown_tiro} to 0.5 seconds
+            else:
+                set {_tipo} to "rifle"
+                set {_capacidad} to {@capacidad_rifle}
+                set {_tiempo_recarga} to {@tiempo_recarga_rifle}
+                set {_distancia} to {@alcance_rifle}
+                set {_daño} to {@dano_rifle}
+                set {_particula} to crit
+                set {_cooldown_tiro} to 0.2 seconds
+
+            # 3. Lógica de Recarga (Si el cargador está vacío)
+            if {cargador::%{_tipo}%::%uuid of player%} <= 0:
+                set {recargando::%uuid of player%} to true
+                
+                # Efectos de inicio de recarga
+                send action bar "&e&l⟳ Recargando %{_tipo}%..." to player
+                play sound "item.armor.equip_chain" at player
+                
+                # Tiempo de espera
+                wait {_tiempo_recarga}
+                
+                # Finalizar recarga
+                set {cargador::%{_tipo}%::%uuid of player%} to {_capacidad}
+                delete {recargando::%uuid of player%}
+                play sound "block.iron_door.open" with pitch 2 at player
+                send action bar "&a✔ %{_tipo}% recargada." to player
+                stop
+
+            # 4. Control de Cadencia de Tiro (Cooldown entre balas)
+            if {cooldown_arma::%uuid of player%} is set:
+                if difference between {cooldown_arma::%uuid of player%} and now < {_cooldown_tiro}:
+                    stop
+            set {cooldown_arma::%uuid of player%} to now
+
+            # 5. Disparo (Si tiene munición física)
+            if player has iron nugget:
+                # Consumo de recursos
+                remove 1 iron nugget from player
+                remove 1 from {cargador::%{_tipo}%::%uuid of player%}
+                
+                # Efectos de disparo
+                play sound "entity.firework_rocket.blast" with volume 2 and pitch 1 at player
+                show 5 large smoke at location 1 meter in front of player's head
+                
+                # Atracción de Zombies (Ruido)
+                loop entities in radius 40 around player:
+                    if loop-entity is a zombie:
+                        set target of loop-entity to player
+                
+                # Raycast (Trayectoria)
+                set {_loc} to player's eye location
+                loop {_distancia} times:
+                    set {_loc} to location loop-value-1 meters in front of player's eyes
+                    show 1 {_particula} at {_loc}
+                    
+                    # Colisión con bloques
+                    if block at {_loc} is not air:
+                        if block at {_loc} is not water:
+                            if block at {_loc} is not tall grass:
+                                play sound "block.stone.hit" at {_loc}
+                                stop loop
+                    
+                    # Colisión con entidades
+                    set {_victimas::*} to entities in radius 1.5 of {_loc}
+                    loop {_victimas::*}:
+                        set {_enemigo} to loop-value-2
+                        if "%uuid of {_enemigo}%" is not "%uuid of player%":
+                            if {_enemigo} is a living entity:
+                                damage {_enemigo} by {_daño}
+                                play sound "entity.player.hurt" at {_enemigo}
+                                show 15 red dust at location of {_enemigo}
+                                stop trigger
+            else:
+                send action bar "&c¡Sin munición en el inventario!" to player
+                play sound "block.dispenser.fail" at player
+
+# --- SECCIÓN 3: ARMAS MELEE ---
+# Daño personalizado para armas cuerpo a cuerpo.
+on damage:
+    if attacker is a player:
+        if name of attacker's tool is "&7&lBate de Béisbol":
+            set damage to 5
+            push victim in direction of attacker at speed 0.8
+            play sound "entity.player.attack.knockback" at attacker
+        else if name of attacker's tool is "&7&lHacha de Bombero":
+            set damage to 6
+            play sound "item.axe.scrape" at attacker
+        else if name of attacker's tool is "&7&lPalo de Golf":
+            set damage to 7
+            play sound "block.anvil.land" with pitch 0.5 at attacker
+            show 10 crit at location of victim
+
+# --- SECCIÓN 4: ARMADURAS ---
+# Reducción de daño por armaduras especiales.
+on damage:
+    if victim is a player:
+        set {_reduccion} to 0
+        if name of victim's chestplate is "&7&lChaleco Antibalas":
+            add (damage * 0.40) to {_reduccion}
+        if name of victim's boots is "&7&lBotas Militares":
+            add (damage * 0.15) to {_reduccion}
+        if name of victim's helmet is "&7&lMáscara de Gas":
+            add (damage * 0.10) to {_reduccion}
+        if {_reduccion} > 0:
+            remove {_reduccion} from damage
+
+# --- SECCIÓN 5: BENGALA ---
+# Lógica de atracción de zombies.
+on right click with redstone torch:
+    if name of player's tool is "&7&lBengala de Distracción":
+        cancel event
+        remove 1 of player's tool from player
+        shoot snowball from player at speed 1.5
+        set item of shot projectile to redstone torch
+        set metadata "tipo" of shot projectile to "bengala"
+        play sound "entity.tnt.primed" at player
+
+on projectile hit:
+    if metadata "tipo" of event-projectile is "bengala":
+        set {_loc} to location of event-projectile
+        play sound "block.bell.use" with volume 2 at {_loc}
+        show 50 flame at {_loc}
+        show 50 lava pop at {_loc}
+        
+        loop entities in radius 30 around {_loc}:
+            if loop-entity is a zombie:
+                set target of loop-entity to null
+                set {_vector} to vector from location of loop-entity to {_loc}
+                push loop-entity {_vector} at speed 0.2
+                
+        # Crear un señuelo invisible
+        spawn a villager at {_loc}
+        set {_cebo} to last spawned entity
+        apply invisibility 1 to {_cebo} for 10 seconds
+        apply slowness 255 to {_cebo} for 10 seconds
+        set max health of {_cebo} to 100
+        set health of {_cebo} to 100
+        set name of {_cebo} to "&cSeñuelo"
+        wait 10 seconds
+        kill {_cebo}
+
+# --- SECCIÓN 6: TRAMPA ---
+# Lógica de la trampa de osos.
+on right click with heavy weighted pressure plate:
+    if name of tool is "&7&lTrampa de Osos":
+        cancel event
+        
+        set {_loc} to location of block above event-block
+        
+        if block at {_loc} is air:
+            remove 1 of tool from player
+            set block at {_loc} to heavy weighted pressure plate
+            set {trampa::%{_loc}%} to true
+            
+            send "&7Trampa colocada." to player
+            play sound "block.metal.place" at {_loc}
+        else:
+            send "&cNo hay espacio para colocar la trampa aquí." to player
+
+on step on heavy weighted pressure plate:
+    if {trampa::%location of event-block%} is true:
+        play sound "entity.iron_golem.break" at event-block
+        play sound "entity.player.hurt" at event-entity
+        damage event-entity by 3 hearts
+        apply slowness 10 to event-entity for 5 seconds
+        apply blindness 1 to event-entity for 2 seconds
+        if event-entity is a player:
+            set {sangrado::%uuid of event-entity%} to true
+            send "&c[SALUD] &4¡Has pisado una trampa!" to event-entity
+        
+        # Eliminar trampa tras uso (Un solo uso)
+        set block at location of event-block to air
+        delete {trampa::%location of event-block%}
+
+# --- SECCIÓN 7: HUD MUNICIÓN ---
+# Muestra las balas del cargador y la reserva.
+every 1 second:
+    loop all players:
+        set {_tool} to loop-player's tool
+        if {_tool} is iron horse armor or golden horse armor:
+            set {_nombre} to uncolored name of {_tool}
+            
+            if {_nombre} contains "Pistola" or "Rifle":
+                
+                # Definir variables según arma para el HUD
+                if {_nombre} contains "Pistola":
+                    set {_tipo} to "pistola"
+                    set {_cap} to {@capacidad_pistola}
+                else:
+                    set {_tipo} to "rifle"
+                    set {_cap} to {@capacidad_rifle}
+                
+                # Contar balas en cargador y reserva
+                set {_balas_cargador} to {cargador::%{_tipo}%::%uuid of loop-player%}
+                set {_reserva} to amount of iron nugget in loop-player's inventory
+                
+                # Comprobar estado de recarga
+                if {recargando::%uuid of loop-player%} is true:
+                    send action bar "&e&l⟳ Recargando..." to loop-player
+                else:
+                    if {_balas_cargador} > 0:
+                        send action bar "&e🔫 %{_balas_cargador}%/%{_cap}% &7| &fReserva: %{_reserva}%" to loop-player
+                    else:
+                        send action bar "&c&l¡RECARGA NECESARIA! &7(Clic Derecho)" to loop-player

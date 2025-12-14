@@ -1,0 +1,136 @@
+# -----------------------------------------------------------------------
+# TIENDA.SK - MERCADO Y ECONOMÍA
+# -----------------------------------------------------------------------
+# Abre un menú GUI para comprar equipamiento y vender chatarra.
+
+command /tienda:
+    description: Abre la tienda de armas
+    trigger:
+        openShop(player)
+
+function openShop(p: player):
+    set {_gui} to chest inventory with 4 rows named "Mercado de Armas"
+    
+    loop integers between 0 and 35:
+        set slot loop-value of {_gui} to gray stained glass pane named "&7"
+    
+    # ARMAS DE FUEGO
+    set slot 10 of {_gui} to iron horse armor named "&7&lPistola" with lore "&8&oDaño: 4" and "&8&oAlcance: 25m" and "&8&oMunición: Pepitas de Hierro" and "&7Precio: &a$1200"
+    set slot 11 of {_gui} to golden horse armor named "&7&lRifle de Asalto" with lore "&8&oDaño: 8" and "&8&oAlcance: 50m" and "&8&oMunición: Pepitas de Hierro" and "&7Precio: &a$2500"
+
+    # ARMAS MELEE
+    set slot 13 of {_gui} to stick named "&7&lBate de Béisbol" with lore "&8&oDaño: 5" and "&8&oEfecto: Empuje" and "&7Precio: &a$800"
+    set slot 14 of {_gui} to iron axe named "&7&lHacha de Bombero" with lore "&8&oDaño: 6" and "&8&oUso: Combate y Madera" and "&7Precio: &a$1200"
+    set slot 15 of {_gui} to stone hoe named "&7&lPalo de Golf" with lore "&8&oDaño: 7" and "&8&oAlcance: Ligero" and "&7Precio: &a$2000"
+
+    # ARMADURAS TÁCTICAS (CORREGIDOS PORCENTAJES)
+    set {_chaleco} to leather chestplate named "&7&lChaleco Antibalas"
+    dye {_chaleco} gray
+    set lore of {_chaleco} to "&8&oProtección: 40%% (Diamante)" and "&7Precio: &a$2000"
+    set slot 19 of {_gui} to {_chaleco}
+    
+    set {_botas} to leather boots named "&7&lBotas Militares"
+    dye {_botas} green
+    set lore of {_botas} to "&8&oProtección: 15%% (Diamante)" and "&8&oEfecto: Inmunidad a Fracturas" and "&7Precio: &a$1200"
+    set slot 20 of {_gui} to {_botas}
+    
+    set {_mascara} to leather helmet named "&7&lMáscara de Gas"
+    dye {_mascara} black
+    set lore of {_mascara} to "&8&oProtección: 10%% (Hierro)" and "&8&oEfecto: Anti-Radiación" and "&7Precio: &a$1000"
+    set slot 21 of {_gui} to {_mascara}
+    
+    # ROPA DE CAZADOR
+    set {_chaqueta} to leather chestplate named "&7&lChaqueta de Cazador"
+    dye {_chaqueta} brown
+    set lore of {_chaqueta} to "&8&oDefensa: Cuero (Baja)" and "&8&oEfecto: Inmunidad al Frío" and "&7Precio: &a$1500"
+    set slot 24 of {_gui} to {_chaqueta}
+    
+    set {_pantalones} to leather leggings named "&7&lPantalones de Cazador"
+    dye {_pantalones} brown
+    set lore of {_pantalones} to "&8&oDefensa: Cuero (Baja)" and "&8&oEfecto: Inmunidad al Frío" and "&7Precio: &a$1500"
+    set slot 25 of {_gui} to {_pantalones}
+    
+    # VENDER CHATARRA
+    set slot 35 of {_gui} to emerald named "&aVender Chatarra" with lore "&8&oVende suministros:" and "&8&o- Carne Podrida &7&o($5)" and "&8&o- Pepitas de Hierro &7&o($10)" and "&e&oClic para vender todo."
+
+    # SALIDA
+    set slot 31 of {_gui} to barrier named "&cSalir" with lore "&7Cierra el menú"
+    
+    open {_gui} to {_p}
+
+on inventory click:
+    if name of event-inventory is "Mercado de Armas":
+        cancel event
+        set {_precio} to 0
+        set {_item} to air
+        
+        if index of event-slot is 10: 
+            set {_precio} to 1200
+            set {_item} to iron horse armor named "&7&lPistola" with lore "&8&oMunición: Pepitas de Hierro"
+        else if index of event-slot is 11: 
+            set {_precio} to 2500
+            set {_item} to golden horse armor named "&7&lRifle de Asalto" with lore "&8&oMunición: Pepitas de Hierro"
+        else if index of event-slot is 13: 
+            set {_precio} to 800
+            set {_item} to stick named "&7&lBate de Béisbol" with lore "&8&oDaño: 5" and "&8&oEfecto: Empuje"
+        else if index of event-slot is 14: 
+            set {_precio} to 1200
+            set {_item} to iron axe named "&7&lHacha de Bombero" with lore "&8&oDaño: 6"
+        else if index of event-slot is 15: 
+            set {_precio} to 2000
+            set {_item} to stone hoe named "&7&lPalo de Golf" with lore "&8&oDaño: 7"
+            
+        else if index of event-slot is 19:
+            set {_precio} to 2000
+            set {_item} to leather chestplate named "&7&lChaleco Antibalas" with lore "&8&oProtección: 40%% (Diamante)"
+            dye {_item} gray
+        else if index of event-slot is 20:
+            set {_precio} to 1200
+            set {_item} to leather boots named "&7&lBotas Militares" with lore "&8&oProtección: 15%% (Diamante)" and "&8&oEfecto: Inmunidad a Fracturas"
+            dye {_item} green
+        else if index of event-slot is 21:
+            set {_precio} to 1000
+            set {_item} to leather helmet named "&7&lMáscara de Gas" with lore "&8&oProtección: 10%% (Hierro)" and "&8&oEfecto: Anti-Radiación"
+            dye {_item} black
+            
+        else if index of event-slot is 24:
+            set {_precio} to 1500
+            set {_item} to leather chestplate named "&7&lChaqueta de Cazador" with lore "&8&oDefensa: Cuero (Baja)" and "&8&oEfecto: Inmunidad al Frío"
+            dye {_item} brown
+            
+        else if index of event-slot is 25:
+            set {_precio} to 1500
+            set {_item} to leather leggings named "&7&lPantalones de Cazador" with lore "&8&oDefensa: Cuero (Baja)" and "&8&oEfecto: Inmunidad al Frío"
+            dye {_item} brown
+            
+        else if index of event-slot is 35:
+            # Lógica de venta
+            set {_ganancia} to 0
+            set {_flesh} to amount of rotten flesh in player's inventory
+            if {_flesh} > 0:
+                remove all rotten flesh from player
+                add ({_flesh} * 5) to {_ganancia}
+            set {_iron} to amount of iron nugget in player's inventory
+            if {_iron} > 0:
+                remove all iron nugget from player
+                add ({_iron} * 10) to {_ganancia}
+            if {_ganancia} > 0:
+                add {_ganancia} to {dinero::%uuid of player%}
+                play sound "entity.experience_orb.pickup" at player
+                send "&aHas vendido chatarra por &e$%{_ganancia}%"
+            else:
+                play sound "block.note_block.bass" at player
+                send "&cNo tienes nada para vender."
+
+        else if index of event-slot is 31:
+            close player's inventory
+
+        if {_precio} > 0:
+            if {dinero::%uuid of player%} >= {_precio}:
+                remove {_precio} from {dinero::%uuid of player%}
+                give player {_item}
+                play sound "entity.experience_orb.pickup" at player
+                send "&aHas comprado: &f%name of {_item}% &apor &e$%{_precio}%"
+            else:
+                play sound "block.note_block.bass" at player
+                send "&cNo tienes suficiente dinero. Necesitas &e$%{_precio}%"

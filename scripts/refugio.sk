@@ -1,0 +1,78 @@
+# -----------------------------------------------------------------------
+# REFUGIO.SK - DEFENSA DE BASES
+# -----------------------------------------------------------------------
+# Permite colocar barricadas y puertas reforzadas que los zombies pueden atacar.
+
+# --- SECCIÓN 1: COLOCACIÓN ---
+on place:
+    if player's tool is iron door named "&7&lPuerta Reforzada":
+        set {es_puerta_reforzada::%location of event-block%} to true
+        set {es_puerta_reforzada::%location of block above event-block%} to true
+        send "&8[&7Refugio&8] &aPuerta reforzada instalada." to player
+
+    else if player's tool is oak trapdoor named "&7&lBarricada de Tablones":
+        set {es_barricada::%location of event-block%} to true
+        play sound "block.wood.place" at event-block
+        send "&8[&7Refugio&8] &6Barricada fijada." to player
+
+# --- SECCIÓN 2: INTERACCIÓN ---
+# Puertas reforzadas solo se abren manualmente (no redstone).
+on right click on iron door:
+    if {es_puerta_reforzada::%location of event-block%} is true:
+        if player is sneaking:
+            stop
+        cancel event
+        toggle event-block
+        play sound "block.iron_door.open" at event-block
+
+# --- SECCIÓN 3: MANTENIMIENTO ---
+# Dropear el ítem correcto al romper.
+on break:
+    if {es_puerta_reforzada::%location of event-block%} is set:
+        delete {es_puerta_reforzada::%location of event-block%}
+        cancel drops
+        drop 1 iron door named "&7&lPuerta Reforzada" with lore "&8&oUso: Entrada Segura" and "&8&oEfecto: Mecanismo manual" and "&8&oResistencia: Muy Alta" at event-block
+
+    if {es_barricada::%location of event-block%} is set:
+        delete {es_barricada::%location of event-block%}
+        cancel drops
+        drop 1 oak trapdoor named "&7&lBarricada de Tablones" with lore "&8&oUso: Colocar en ventanas/ventanales" and "&8&oResistencia: Media" at event-block
+
+# --- SECCIÓN 4: IA ZOMBIE (ASEDIO) ---
+# Los zombies intentan romper defensas cercanas.
+every 2 seconds:
+    loop all zombies:
+        if target of loop-zombie is set:
+            if distance between loop-zombie and target of loop-zombie < 4:
+                set {_b} to block at location 1 meter in front of eye location of loop-zombie
+                
+                # A. ATACAR BARRICADA
+                if {es_barricada::%location of {_b}%} is true:
+                    if block data of {_b} contains "open=false":
+                        play sound "block.wood.hit" at loop-zombie
+                        if chance of 15%:
+                            play sound "entity.zombie.break_wooden_door" at loop-zombie
+                            set block at {_b} to air
+                            delete {es_barricada::%location of {_b}%}
+                            show 30 cloud at {_b}
+                            show 10 crit at {_b}
+
+                # B. ATACAR PUERTA REFORZADA (Solo Tanques)
+                else if {es_puerta_reforzada::%location of {_b}%} is true:
+                    play sound "entity.zombie.attack_iron_door" at loop-zombie
+                    if name of loop-zombie contains "Tanque":
+                        if chance of 5%:
+                            play sound "entity.zombie.break_wooden_door" with pitch 0.5 at loop-zombie
+                            set block at {_b} to air
+                            delete {es_puerta_reforzada::%location of {_b}%}
+                            show 30 cloud at {_b}
+                            show 10 crit at {_b}
+                    else:
+                        damage loop-zombie by 0.5
+
+                # C. ATACAR CRISTAL
+                else if {_b} is glass or glass pane:
+                    play sound "block.glass.hit" at loop-zombie
+                    if chance of 40%:
+                        break {_b} naturally
+                        play sound "block.glass.break" at loop-zombie
