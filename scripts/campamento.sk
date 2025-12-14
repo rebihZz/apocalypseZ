@@ -1,0 +1,115 @@
+# -----------------------------------------------------------------------
+# SISTEMA NÓMADA: KIT DE ACAMPADA (AUTO-ENCENDIDO)
+# -----------------------------------------------------------------------
+
+# 1. MONTAR CAMPAMENTO
+on right click with white bed:
+    if name of player's tool is "&6Kit de Acampada":
+        cancel event
+        
+        # Punto central
+        set {_centro} to location of block above event-block
+        
+        # --- COMPROBACIÓN DE ESPACIO ---
+        set {_b_centro} to block at {_centro}
+        set {_b_norte} to block 1 meter north of {_centro}
+        set {_b_oeste} to block 1 meter west of {_centro}
+        set {_b_este1} to block 1 meter east of {_centro}
+        set {_b_este2} to block 2 meters east of {_centro}
+        set {_b_sur} to block 1 meter south of {_centro}
+        
+        set {_obstaculos_encontrados} to false
+        
+        loop {_b_centro}, {_b_norte}, {_b_oeste}, {_b_este1}, {_b_este2}, {_b_sur}:
+            if loop-value is not air:
+                set {_nombre_bloque} to "%type of loop-value%"
+                if {_nombre_bloque} does not contain "grass":
+                    if {_nombre_bloque} does not contain "snow":
+                        if {_nombre_bloque} does not contain "flower":
+                            if {_nombre_bloque} does not contain "fern":
+                                if {_nombre_bloque} does not contain "bush":
+                                    if {_nombre_bloque} does not contain "poppy":
+                                        if {_nombre_bloque} does not contain "dandelion":
+                                            set {_obstaculos_encontrados} to true
+        
+        if {_obstaculos_encontrados} is true:
+            send "&cNo hay suficiente espacio. Necesitas una zona plana y despejada de 3x2." to player
+            play sound "block.note_block.bass" at player
+            stop
+        
+        # --- CONSTRUCCIÓN ---
+        remove 1 of player's tool from player
+        play sound "block.wood.place" at {_centro}
+        
+        # 1. Limpiar zona
+        loop {_b_centro}, {_b_norte}, {_b_oeste}, {_b_este1}, {_b_este2}, {_b_sur}:
+            set block at location of loop-value to air
+            
+        # 2. Colocar Bloques
+        # CAMBIO: La hoguera se pone normal (encendida por defecto)
+        set block at {_centro} to campfire
+        set {campamento_dueno::%location of block at {_centro}%} to uuid of player
+        
+        set block at location of {_b_norte} to furnace
+        set block at location of {_b_oeste} to crafting table
+        set block at location of {_b_este1} to white bed
+        set block at location of {_b_sur} to oak log
+        
+        send "&a&l⛺ &aCampamento establecido." to player
+        send "&7La hoguera está lista. Usa &eShift + Clic Derecho&7 para empacar." to player
+
+# 2. DESMONTAR CAMPAMENTO
+on right click on campfire:
+    if player is sneaking:
+        if {campamento_dueno::%location of event-block%} is set:
+            if {campamento_dueno::%location of event-block%} is uuid of player:
+                cancel event
+                
+                send "&eDesmantelando campamento..." to player
+                play sound "block.wool.break" at player
+                
+                set {_centro} to location of event-block
+                set {_horno_loc} to location 1 meter north of {_centro}
+                set {_cama_head} to location 1 meter east of {_centro}
+                set {_cama_feet} to location 2 meters east of {_centro}
+                
+                # --- SOLTAR ÍTEMS DEL HORNO ---
+                if block at {_horno_loc} is furnace:
+                    drop all items in inventory of block at {_horno_loc} at {_horno_loc}
+                
+                # --- BORRAR BLOQUES ---
+                set block at {_centro} to air 
+                set block at {_horno_loc} to air 
+                set block at location 1 meter west of {_centro} to air 
+                set block at location 1 meter south of {_centro} to air 
+                set block at {_cama_head} to air
+                set block at {_cama_feet} to air
+                
+                delete {campamento_dueno::%location of event-block%}
+                
+                # Limpieza de cama extra
+                wait 1 tick
+                loop all dropped items in radius 4 around {_centro}:
+                    if item of loop-value is white bed:
+                        if name of item of loop-value is not set:
+                            clear loop-value
+                        else if name of item of loop-value is not "&6Kit de Acampada":
+                            clear loop-value
+                
+                # DEVOLVER KIT
+                give player white bed named "&6Kit de Acampada" with lore "&7Uso: &eClic derecho en suelo" and "&7Contiene: &fCama, Horno, Mesa y Hoguera"
+                
+                send "&6&l⛺ &6Campamento recogido." to player
+            else:
+                send "&cEste campamento no es tuyo." to player
+
+# 3. BENEFICIO: CALOR DE HOGUERA
+every 5 seconds:
+    loop all players:
+        loop blocks in radius 3 around loop-player:
+            if loop-block is campfire:
+                # Solo cura si está ENCENDIDA (burning)
+                if loop-block is burning:
+                    if {campamento_dueno::%location of loop-block%} is set:
+                        apply regeneration 1 to loop-player for 3 seconds
+                        show 1 flame at location of loop-player

@@ -1,0 +1,108 @@
+# -----------------------------------------------------------------------
+# SISTEMA DE AIRDROPS REALISTAS (CAÍDA LENTA) - CORREGIDO
+# -----------------------------------------------------------------------
+
+# Frecuencia: 10 Minutos
+every 10 minutes:
+    loop all players:
+        if chance of 50%:
+            set {_x} to x-coord of loop-player
+            set {_z} to z-coord of loop-player
+            add random number between -50 and 50 to {_x}
+            add random number between -50 and 50 to {_z}
+            
+            set {_loc_suelo} to location at {_x}, 300, {_z} in world of loop-player
+            
+            loop 300 times:
+                if block below {_loc_suelo} is not air:
+                    if block below {_loc_suelo} is not water:
+                        stop loop
+                remove 1 from y-coord of {_loc_suelo}
+            
+            set {_loc_cielo} to {_loc_suelo}
+            add 30 to y-coord of {_loc_cielo}
+            
+            iniciarCaida({_loc_cielo}, {_loc_suelo}, loop-player)
+
+command /airdrop:
+    permission: op
+    trigger:
+        set {_suelo} to location of player
+        set {_cielo} to location of player
+        add 20 to y-coord of {_cielo}
+        iniciarCaida({_cielo}, {_suelo}, player)
+        send "&a¡Lanzando suministros!" to player
+
+function iniciarCaida(origen: location, destino: location, p: player):
+    broadcast "&e&l✈ &f¡Suministros avistados! Cayendo en &7X:%floor(x-coord of {_destino})% Z:%floor(z-coord of {_destino})%"
+    
+    spawn an armor stand at {_origen}
+    set {_drop} to last spawned armor stand
+    set helmet of {_drop} to chest
+    
+    # CORRECCIÓN: Sintaxis NBT para SkBee
+    add nbt from "{Invisible:1b,Invulnerable:1b,NoGravity:1b}" to nbt of {_drop}
+    
+    set {_altura_actual} to y-coord of {_origen}
+    set {_altura_suelo} to y-coord of {_destino}
+    set {_x_fijo} to x-coord of {_origen}
+    set {_z_fijo} to z-coord of {_origen}
+    set {_mundo} to world of {_origen}
+    
+    # Bucle de caída
+    while {_altura_actual} > {_altura_suelo}:
+        remove 0.4 from {_altura_actual}
+        
+        # CORRECCIÓN: Crear la ubicación en una variable antes de teletransportar
+        set {_tp_loc} to location({_x_fijo}, {_altura_actual}, {_z_fijo}, {_mundo})
+        teleport {_drop} to {_tp_loc}
+        
+        show 5 cloud at location of {_drop}
+        wait 1 tick
+        
+        if {_drop} does not exist:
+            stop loop
+            
+    kill {_drop}
+    
+    set block at {_destino} to chest
+    set {_chest} to block at {_destino}
+    
+    play sound "block.anvil.land" with volume 2 and pitch 0.5 at {_destino}
+    show 50 campfire signal smoke at {_destino}
+    show 20 explosion at {_destino}
+    
+    llenarLoot({_chest})
+
+function llenarLoot(b: block):
+    clear {_loot_comun::*}
+    clear {_loot_raro::*}
+    
+    add paper named "&aVenda" to {_loot_comun::*}
+    add iron nugget to {_loot_comun::*}
+    add bread to {_loot_comun::*}
+    add apple to {_loot_comun::*}
+    add coal to {_loot_comun::*}
+    add rotten flesh to {_loot_comun::*}
+    add string to {_loot_comun::*}
+    add glass bottle to {_loot_comun::*}
+    
+    add lightning rod named "&7Cañón de Arma" to {_loot_raro::*}
+    add iron ingot named "&7Pieza Metálica" to {_loot_raro::*}
+    add ink sac named "&eCargador" to {_loot_raro::*}
+    add redstone named "&cBotiquín" to {_loot_raro::*}
+    add end rod named "&aAntídoto" to {_loot_raro::*}
+    
+    loop (random integer between 4 and 8) times:
+        if chance of 15%:
+            set {_item} to random element out of {_loot_raro::*}
+            set {_amount} to 1
+        else:
+            set {_item} to random element out of {_loot_comun::*}
+            set {_amount} to random integer between 1 and 3
+        
+        loop 10 times:
+            set {_slot} to random integer between 0 and 26
+            if slot {_slot} of inventory of {_b} is air:
+                set slot {_slot} of inventory of {_b} to {_amount} of {_item}
+                stop loop
