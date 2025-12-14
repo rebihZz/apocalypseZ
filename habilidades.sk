@@ -1,0 +1,66 @@
+# -----------------------------------------------------------------------
+# SISTEMA DE HABILIDADES (SKILLS & GUI)
+# -----------------------------------------------------------------------
+
+on join:
+    if {xp_atletismo::%uuid of player%} is not set:
+        set {xp_atletismo::%uuid of player%} to 0
+    if {xp_punteria::%uuid of player%} is not set:
+        set {xp_punteria::%uuid of player%} to 0
+
+# --- 1. ATLETISMO (Correr) ---
+every 5 seconds:
+    loop all players:
+        if loop-player is sprinting:
+            add 1 to {xp_atletismo::%uuid of loop-player%}
+            set {_nivel} to floor({xp_atletismo::%uuid of loop-player%} / 100)
+            if {_nivel} >= 5:
+                apply speed 1 to loop-player for 6 seconds
+
+# --- 2. PUNTERÍA (Disparar) ---
+on damage:
+    if attacker is a player:
+        if damage cause is projectile:
+            add 2 to {xp_punteria::%uuid of attacker%}
+            set {_nivel} to floor({xp_punteria::%uuid of attacker%} / 100)
+            if {_nivel} > 0:
+                add ({_nivel} * 0.5) to damage
+
+# --- 3. MUERTE ---
+on death of player:
+    set {xp_atletismo::%uuid of victim%} to {xp_atletismo::%uuid of victim%} / 2
+    set {xp_punteria::%uuid of victim%} to {xp_punteria::%uuid of victim%} / 2
+    send "&c☠ Has muerto y tus habilidades se han atrofiado." to victim
+
+# --- 4. FUNCIÓN MENÚ ---
+function abrirMenuHabilidades(p: player):
+    set {_gui} to chest inventory with 3 rows named "Perfil de Habilidades"
+    
+    loop integers between 0 and 26:
+        set slot loop-value of {_gui} to gray stained glass pane named "&7"
+        
+    set {_lvl_atl} to floor({xp_atletismo::%uuid of {_p}%} / 100)
+    set {_lvl_pun} to floor({xp_punteria::%uuid of {_p}%} / 100)
+    
+    # Slot 11: Atletismo
+    set slot 11 of {_gui} to iron boots named "&b🏃 Atletismo" with lore "&fNivel Actual: &e%{_lvl_atl}%" and "&7Experiencia: &f%{xp_atletismo::%uuid of {_p}%}% XP" and "" and "&aBeneficio:" and "&7Velocidad I permanente" and "&7si alcanzas el &eNivel 5&7."
+    
+    # Slot 13: Cabeza Jugador
+    set slot 13 of {_gui} to skull of {_p} named "&eSuperviviente: %{_p}%" with lore "&7Mantente con vida para" and "&7no perder progreso."
+    
+    # Slot 15: Puntería
+    set slot 15 of {_gui} to bow named "&c🎯 Puntería" with lore "&fNivel Actual: &e%{_lvl_pun}%" and "&7Experiencia: &f%{xp_punteria::%uuid of {_p}%}% XP" and "" and "&aBeneficio:" and "&7+0.5 Daño con armas" and "&7por cada nivel."
+    
+    set slot 22 of {_gui} to barrier named "&cCerrar"
+    
+    open {_gui} to {_p}
+
+command /perfil:
+    trigger:
+        abrirMenuHabilidades(player)
+
+on inventory click:
+    if name of event-inventory is "Perfil de Habilidades":
+        cancel event
+        if index of event-slot is 22:
+            close player's inventory

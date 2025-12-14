@@ -1,0 +1,58 @@
+# -----------------------------------------------------------------------
+# MOCHILA (COFRE PORTÁTIL) - VERSIÓN FINAL
+# -----------------------------------------------------------------------
+on join:
+    if {mochila_recibida::%uuid of player%} is not set:
+        set {mochila_recibida::%uuid of player%} to true
+        give player chest named "&6Mochila" with lore "&7Haz clic derecho o usa /mochila"
+
+function abrirMochila(p: player):
+    set {_gui} to chest inventory with 3 rows named "Mochila de %{_p}%"
+    if {mochila::%uuid of {_p}%::*} is set:
+        loop {mochila::%uuid of {_p}%::*}:
+            add loop-value to {_gui}
+    open {_gui} to {_p}
+
+on right click with chest:
+    if name of tool is "&6Mochila":
+        cancel event
+        abrirMochila(player)
+
+command /mochila:
+    trigger:
+        abrirMochila(player)
+
+on inventory close:
+    if name of event-inventory is "Mochila de %player%":
+        delete {mochila::%uuid of player%::*}
+        set {_items::*} to all items in event-inventory
+        set {mochila::%uuid of player%::*} to {_items::*}
+        send action bar "&7Mochila guardada." to player
+
+# --- PROTECCIÓN DE INVENTARIO ---
+on inventory click:
+    # Solo aplicamos la seguridad si la mochila está abierta
+    if name of event-inventory contains "Mochila":
+        
+        # 1. BLOQUEO: CLIC DIRECTO
+        # Usamos 'event-item' que es la sintaxis universal
+        if event-item is chest:
+            if name of event-item is "&6Mochila":
+                cancel event
+                send "&c⚠ No puedes mover la mochila mientras la usas." to player
+
+        # 2. BLOQUEO: TECLAS NUMÉRICAS (HOTBAR)
+        if click type is number key:
+            set {_item_hotbar} to slot (hotbar button) of player's inventory
+            if {_item_hotbar} is chest:
+                if name of {_item_hotbar} is "&6Mochila":
+                    cancel event
+                    send "&c⚠ No puedes mover la mochila mientras la usas." to player
+        
+        # 3. BLOQUEO: SHIFT CLICK
+        # Usamos detección de texto para abarcar Shift Izquierdo y Derecho sin errores
+        if "%click type%" contains "SHIFT":
+            if event-item is chest:
+                if name of event-item is "&6Mochila":
+                    cancel event
+                    send "&c⚠ No puedes mover la mochila mientras la usas." to player

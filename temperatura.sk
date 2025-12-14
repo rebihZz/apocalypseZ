@@ -1,0 +1,76 @@
+# -----------------------------------------------------------------------
+# SISTEMA DE TEMPERATURA (DAÑO INSTANTÁNEO)
+# -----------------------------------------------------------------------
+
+every 1 second:
+    loop all players:
+        set {_p} to loop-player
+        set {_protegido} to false
+        
+        # 1. COMPROBAR PROTECCIÓN (Ropa de Cazador)
+        # Basta con llevar 1 de las 2 piezas
+        if name of {_p}'s chestplate is "&6Chaqueta de Cazador":
+            set {_protegido} to true
+        else if name of {_p}'s leggings is "&6Pantalones de Cazador":
+            set {_protegido} to true
+        
+        # Si tiene hoguera cerca, también cuenta como protegido
+        if {_protegido} is false:
+            loop blocks in radius 3 around {_p}:
+                if loop-block is campfire:
+                    if block data of loop-block contains "lit=true":
+                        set {_protegido} to true
+        
+        # Si ya está protegido, no hacemos nada más
+        if {_protegido} is true:
+            continue
+            
+        # 2. DETECTAR CONDICIONES DE FRÍO (Sin protección)
+        set {_dano} to false
+        set {_razon} to ""
+        
+        # Condición A: Hielo o Nieve bajo los pies (Contacto directo)
+        set {_suelo} to block at {_p}
+        set {_suelo_abajo} to block below {_p}
+        
+        if {_suelo} is snow or ice or packed ice or blue ice or powder snow:
+            set {_dano} to true
+            set {_razon} to "Suelo Helado"
+        else if {_suelo_abajo} is snow or ice or packed ice or blue ice or powder snow:
+            set {_dano} to true
+            set {_razon} to "Suelo Helado"
+            
+        # Condición B: Es de Noche (y no está bajo techo)
+        if {_dano} is false: # Solo comprobamos si no se ha dañado ya por el suelo
+            if time in world of {_p} is night:
+                # Comprobamos si está a la intemperie (opcional, pero realista)
+                if highest block at {_p} is air: 
+                    # Si no hay techo, daño
+                    set {_dano} to true
+                    set {_razon} to "Noche Helada"
+                else if y-coord of highest block at location of {_p} <= y-coord of {_p}:
+                    # Si el bloque más alto es donde está él (cielo abierto)
+                    set {_dano} to true
+                    set {_razon} to "Noche Helada"
+
+        # 3. APLICAR CASTIGO
+        if {_dano} is true:
+            
+            # Daño físico real
+            damage {_p} by 0.5 hearts
+            play sound "entity.player.hurt_freeze" at {_p}
+            
+            # Efecto visual de congelación
+            show 10 snowflake at location of {_p}
+            
+            # AVISO POR CHAT (Con cooldown para no spamear cada segundo)
+            if {cooldown_aviso_frio::%uuid of {_p}%} is not set:
+                set {cooldown_aviso_frio::%uuid of {_p}%} to now
+                send "" to {_p}
+                send "&b❄ &l¡TE CONGELAS! &c(%{_razon}%)" to {_p}
+                send "&7¡Necesitas &6Ropa de Cazador&7 o una &6Hoguera&7 YA!" to {_p}
+                send "" to {_p}
+            
+            # Reiniciar aviso cada 5 segundos
+            if difference between {cooldown_aviso_frio::%uuid of {_p}%} and now > 5 seconds:
+                delete {cooldown_aviso_frio::%uuid of {_p}%}

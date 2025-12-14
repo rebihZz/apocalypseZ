@@ -1,0 +1,82 @@
+# -----------------------------------------------------------------------
+# SISTEMA CENTRAL DE CRAFTEOS (BARRICADA HIERRO-MADERA-HIERRO)
+# -----------------------------------------------------------------------
+
+on load:
+    # --- 1. COMIDA ---
+    register new shaped recipe for cookie named "&6Barrita Energética" with lore "&7Efecto: &bVelocidad I (40s)" using wheat, sugar, wheat, air, air, air, air, air and air with id "craft_barrita"
+    register new shapeless recipe for mushroom stew named "&eLata de Conservas" with lore "&7Efecto: &dRegeneración I (20s)" using cooked beef, bowl, baked potato with id "craft_lata"
+    register new shapeless recipe for dried kelp named "&6Carne Seca" with lore "&7Efecto: &cSalud Instantánea (4❤)" using porkchop, porkchop, porkchop with id "craft_carne_seca"
+
+    # --- 2. MEDICINAS & UTILES ---
+    register new shapeless recipe for paper named "&aVenda" with lore "&7Cura: &c2 Corazones" and "&7Efecto: &cDetiene Sangrado" using paper, paper with id "venda_craft"
+    
+    set {_venda} to paper named "&aVenda"
+    register new shapeless recipe for redstone named "&cBotiquín" with lore "&7Uso: &aCura Piernas Rotas" and "&7Origen: &eCaídas" using paper, leather with id "craft_botiquin"
+    
+    register new shapeless recipe for end rod named "&aAntídoto" with lore "&7Uso: &aCura Infección Zombie" using paper, rotten flesh with id "craft_antidoto"
+
+    register new shaped recipe for tripwire hook named "&eLinterna" with lore "&7Efecto: &eVisión Nocturna" and "&7Duración: &fInfinita (en mano)" using air, glowstone dust, air, glowstone dust, iron ingot, glowstone dust, air, glowstone dust, air with id "craft_linterna"
+    
+    set {_mascara} to leather helmet named "&bMáscara de Gas" with lore "&7Protección: &fMedia (Hierro)" and "&7Efecto: &aAnti-Radiación"
+    dye {_mascara} black
+    register new shaped recipe for {_mascara} using air, iron ingot, air, iron ingot, glass, iron ingot, air, iron ingot, air with id "craft_mascara"
+
+    register new shaped recipe for white bed named "&6Kit de Acampada" with lore "&7Uso: &eClic derecho en suelo" and "&7Contiene: &fCama, Horno, Mesa y Hoguera" using leather, leather, leather, furnace, white bed, crafting table, leather, leather, leather with id "craft_campamento"
+
+    # --- 3. FORTIFICACIÓN (BARRICADA ACTUALIZADA) ---
+    # Receta: Hierro, Madera, Hierro (Horizontal)
+    register new shaped recipe for oak trapdoor named "&6Barricada de Tablones" with lore "&7Uso: &eColocar en ventanas" and "&7Resistencia: &eMedia" using iron ingot, oak planks, iron ingot, air, air, air, air, air, air with id "craft_barricada"
+    
+    register new shaped recipe for iron door named "&8Puerta Reforzada" with lore "&7Uso: &eEntrada Segura" and "&7Efecto: &bMecanismo manual" and "&7Resistencia: &aMuy Alta" using iron ingot, oak planks, iron ingot, iron ingot, oak planks, iron ingot, air, air, air with id "craft_puerta_reforzada"
+
+    # --- 4. PIEZAS DE ARMAS ---
+    set {_canon} to lightning rod named "&7Cañón de Arma" with lore "&7Componente de ensamblaje"
+    set {_pieza} to iron ingot named "&7Pieza Metálica" with lore "&7Componente de ensamblaje"
+    set {_cargador} to ink sac named "&eCargador" with lore "&7Componente de ensamblaje"
+
+    register new shaped recipe for {_canon} using iron ingot, air, air, iron ingot, air, air, iron ingot, air and air with id "craft_canon"
+    register new shaped recipe for {_pieza} using iron ingot, iron block, iron ingot, air, air, air, air, air and air with id "craft_pieza"
+    register new shapeless recipe for {_cargador} using coal, iron ingot, iron ingot with id "craft_cargador"
+
+    # --- 5. ARMAS DE FUEGO ---
+    register new shaped recipe for iron horse armor named "&7Pistola" with lore "&7Daño: &c4" and "&7Alcance: &b25m" and "&fMunición: &ePepitas de Hierro" using {_canon}, {_pieza}, air, air, {_cargador}, air, air, air and air with id "craft_pistola_final"
+    register new shaped recipe for golden horse armor named "&6Rifle de Asalto" with lore "&7Daño: &c8" and "&7Alcance: &b50m" and "&fMunición: &ePepitas de Hierro" using {_canon}, {_canon}, {_pieza}, air, {_pieza}, {_cargador}, air, air and air with id "craft_rifle_final"
+
+    # --- 6. ARMAS MELEE ---
+    set {_bate} to stick named "&6Bate de Béisbol" with lore "&7Daño: &c5" and "&7Efecto: &fEmpuje"
+    register new shaped recipe for {_bate} using oak log, air, air, oak log, air, air, stick, air, air with id "craft_bate"
+    set {_hacha} to iron axe named "&cHacha de Bombero" with lore "&7Daño: &c6"
+    register new shaped recipe for {_hacha} using air, brick, air, brick, stone axe, brick, air, brick, air with id "craft_hacha_bombero"
+    set {_golf} to stone hoe named "&7Palo de Golf" with lore "&7Daño: &c7"
+    register new shaped recipe for {_golf} using air, iron ingot, air, iron ingot, iron hoe, iron ingot, air, iron ingot, air with id "craft_golf"
+
+    # --- 7. ARMADURAS TÁCTICAS ---
+    set {_chaleco} to leather chestplate named "&8Chaleco Antibalas" with lore "&7Protección: &b40%% (Diamante)"
+    dye {_chaleco} gray
+    register new shaped recipe for {_chaleco} using air, iron ingot, air, iron ingot, iron chestplate, iron ingot, air, iron ingot, air with id "craft_chaleco"
+    set {_botas} to leather boots named "&2Botas Militares" with lore "&7Protección: &b15%% (Diamante)" and "&7Efecto: &aInmunidad a Fracturas"
+    dye {_botas} green
+    register new shaped recipe for {_botas} using air, iron ingot, air, iron ingot, leather boots, iron ingot, air, iron ingot, air with id "craft_botas"
+    
+    # --- 8. UTILIDADES ---
+    register new shapeless recipe for redstone torch named "&cBengala de Distracción" with lore "&7Uso: &eLanzar para atraer zombies" using redstone torch, gunpowder with id "craft_bengala"
+    register new shaped recipe for heavy weighted pressure plate named "&8Trampa de Osos" with lore "&7Uso: &eColocar en el suelo" and "&7Efecto: &cInmoviliza y daña" using air, air, air, air, air, air, iron ingot, iron ingot, iron ingot with id "craft_trampa"
+
+    # --- 9. ROPA DE CAZADOR (LORE ACTUALIZADO) ---
+    
+    # CHAQUETA DE CAZADOR
+    set {_chaqueta} to leather chestplate named "&6Chaqueta de Cazador"
+    dye {_chaqueta} brown
+    # Lore actualizado
+    set lore of {_chaqueta} to "&7Defensa: &fCuero (Baja)" and "&7Efecto: &bInmunidad al Frío" and "&7Material: &fCuero Reforzado"
+    
+    register new shaped recipe for {_chaqueta} using air, leather, air, leather, leather chestplate, leather, air, leather, air with id "craft_chaqueta_cazador"
+
+    # PANTALONES DE CAZADOR
+    set {_pantalones} to leather leggings named "&6Pantalones de Cazador"
+    dye {_pantalones} brown
+    # Lore actualizado
+    set lore of {_pantalones} to "&7Defensa: &fCuero (Baja)" and "&7Efecto: &bInmunidad al Frío" and "&7Material: &fCuero Reforzado"
+    
+    register new shaped recipe for {_pantalones} using air, leather, air, leather, leather leggings, leather, air, leather, air with id "craft_pantalones_cazador"

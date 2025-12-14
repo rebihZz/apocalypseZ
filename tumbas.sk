@@ -1,0 +1,84 @@
+# -----------------------------------------------------------------------
+# SISTEMA DE TUMBAS: INVENTARIO VIRTUAL (CORREGIDO)
+# -----------------------------------------------------------------------
+
+on death of player:
+    # 1. CONFIGURACIÓN
+    cancel drops
+    set {_loc} to location of victim
+    
+    # 2. LIMPIEZA DE ESTADOS
+    delete {infectado::%uuid of victim%}
+    delete {sangrado::%uuid of victim%}
+    delete {fractura::%uuid of victim%}
+    set {sed::%uuid of victim%} to 100
+    
+    # 3. BUSCAR SUELO FIRME
+    # Bajamos mientras el bloque NO sea sólido (aire, agua, hierba, flores...)
+    loop 20 times:
+        if block at {_loc} is not solid:
+            remove 1 from y-coord of {_loc}
+        else:
+            stop loop
+            
+    # Subimos 1 bloque para colocar el cofre ENCIMA del suelo sólido
+    add 1 to y-coord of {_loc}
+    
+    # 4. GUARDAR ITEMS EN VARIABLE (NUBE)
+    set {_tumba_id} to "%{_loc}%"
+    set {tumba_inventario::%{_tumba_id}%::*} to all items in victim's inventory
+    
+    # 5. COLOCAR BLOQUE VISUAL
+    set block at {_loc} to chest
+    set {es_tumba::%{_loc}%} to true
+    set {tumba_dueno::%{_loc}%} to victim
+    
+    clear drops
+    broadcast "&c&l☠ &f%victim% ha muerto. Su tumba está en: &7%floor(x-coord of {_loc})%, %floor(y-coord of {_loc})%, %floor(z-coord of {_loc})%"
+
+# 6. ABRIR TUMBA (GUI VIRTUAL)
+on right click on chest:
+    if {es_tumba::%location of event-block%} is true:
+        cancel event
+        set {_loc} to location of event-block
+        set {_tumba_id} to "%{_loc}%"
+        set {_dueno} to {tumba_dueno::%{_loc}%}
+        
+        set {_gui} to chest inventory with 6 rows named "Tumba de %{_dueno}%"
+        
+        set {_items::*} to {tumba_inventario::%{_tumba_id}%::*}
+        loop {_items::*}:
+            add loop-value to {_gui}
+            
+        open {_gui} to player
+        play sound "block.chest.open" at player
+
+# 7. CERRAR Y ACTUALIZAR/BORRAR
+on inventory close:
+    if name of event-inventory contains "Tumba de":
+        loop blocks in radius 5 around player:
+            if loop-block is chest:
+                if {es_tumba::%location of loop-block%} is true:
+                    set {_loc} to location of loop-block
+                    set {_tumba_id} to "%{_loc}%"
+                    
+                    if event-inventory is empty:
+                        set block at {_loc} to air
+                        play sound "block.chest.close" at player
+                        play sound "entity.experience_orb.pickup" at player
+                        send "&7Tumba saqueada y eliminada." to player
+                        
+                        delete {tumba_inventario::%{_tumba_id}%::*}
+                        delete {es_tumba::%{_loc}%}
+                        delete {tumba_dueno::%{_loc}%}
+                        stop loop
+                    else:
+                        set {tumba_inventario::%{_tumba_id}%::*} to all items in event-inventory
+                        play sound "block.chest.close" at player
+                        stop loop
+
+# 8. PROTECCIÓN
+on break of chest:
+    if {es_tumba::%location of event-block%} is true:
+        cancel event
+        send "&cDebes vaciar la tumba abriéndola para eliminarla." to player
