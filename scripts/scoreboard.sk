@@ -1,0 +1,72 @@
+# -----------------------------------------------------------------------
+# SCOREBOARD.SK - PANEL DE INFORMACIÓN (HUD)
+# -----------------------------------------------------------------------
+# Muestra estadísticas en tiempo real en el lateral de la pantalla.
+# Versión compatible con sistemas estándar (ignorar warnings de deprecated).
+
+# --- SECCIÓN 1: CONTROL DEL HUD ---
+# Activar al entrar
+on join:
+    toggleScoreboard(player, true)
+
+# Actualizar cada 2 segundos
+every 2 seconds:
+    loop all players:
+        if {scoreboard_activa::%uuid of loop-player%} is true:
+            updateScoreboard(loop-player)
+
+# Comando para ocultar/mostrar
+command /estadisticas:
+    trigger:
+        if {scoreboard_activa::%uuid of player%} is true:
+            set {scoreboard_activa::%uuid of player%} to false
+            # CORRECCIÓN: Borrado estándar
+            clear scoreboard of player
+            send "&cEstadísticas ocultas."
+        else:
+            toggleScoreboard(player, true)
+            send "&aEstadísticas visibles."
+
+# --- SECCIÓN 2: FUNCIONES DE RENDERIZADO ---
+function toggleScoreboard(p: player, state: boolean):
+    set {scoreboard_activa::%uuid of {_p}%} to {_state}
+    if {_state} is true:
+        # CORRECCIÓN: Sintaxis estándar
+        set title of scoreboard of {_p} to "&4&lZOMBIE APOCALYPSE"
+        updateScoreboard({_p})
+
+function updateScoreboard(p: player):
+    # Obtención segura de variables
+    set {_dinero} to {dinero::%uuid of {_p}%}
+    if {_dinero} is not set:
+        set {_dinero} to 0
+    
+    set {_sed} to {sed::%uuid of {_p}%}
+    if {_sed} is not set:
+        set {_sed} to 100
+        
+    set {_kills} to {kills::%uuid of {_p}%}
+    if {_kills} is not set:
+        set {_kills} to 0
+        
+    # Dibujado de líneas (Sintaxis estándar)
+    set line 1 of scoreboard of {_p} to "&7&m------------------"
+    set line 2 of scoreboard of {_p} to "&fSobreviviente:"
+    set line 3 of scoreboard of {_p} to "&7%{_p}%"
+    set line 4 of scoreboard of {_p} to ""
+    
+    set line 5 of scoreboard of {_p} to "&fSed:"
+    set line 6 of scoreboard of {_p} to "&b%{_sed}%/100 💧"
+    
+    set line 7 of scoreboard of {_p} to ""
+    set line 8 of scoreboard of {_p} to "&fDinero:"
+    set line 9 of scoreboard of {_p} to "&a$%{_dinero}%"
+    set line 10 of scoreboard of {_p} to ""
+    set line 11 of scoreboard of {_p} to "&fZombies Matados:"
+    set line 12 of scoreboard of {_p} to "&c%{_kills}%"
+    set line 13 of scoreboard of {_p} to "&7&m------------------"
+
+# --- SECCIÓN 3: CONTADOR DE KILLS ---
+on death of zombie:
+    if attacker is a player:
+        add 1 to {kills::%uuid of attacker%}
