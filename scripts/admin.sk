@@ -1,0 +1,150 @@
+# -----------------------------------------------------------------------
+# ADMIN.SK - PANEL DE CONTROL DE ADMINISTRADOR (VERSIÓN UNIFICADA)
+# -----------------------------------------------------------------------
+# Menú GUI para obtener ítems personalizados y gestionar el servidor.
+
+command /admin:
+    description: Abre el menú de administración
+    permission: op
+    permission message: &c¡Solo los administradores pueden acceder a este menú!
+    trigger:
+        openAdminMenu(player)
+
+function openAdminMenu(p: player):
+    set {_gui} to chest inventory with 6 rows named "Panel de Administrador"
+    loop integers between 0 and 53:
+        set slot loop-value of {_gui} to gray stained glass pane named "&7"
+    
+    # --- FILA 1: ARMAS Y MUNICIÓN ---
+    set slot 0 of {_gui} to iron horse armor named "&7&lPistola" with lore "&8&oDaño: 4" and "&8&oAlcance: 25m" and "&8&oMunición: Pepitas de Hierro"
+    set slot 1 of {_gui} to golden horse armor named "&7&lRifle de Asalto" with lore "&8&oDaño: 8" and "&8&oAlcance: 50m" and "&8&oMunición: Pepitas de Hierro"
+    set slot 2 of {_gui} to stick named "&7&lBate de Béisbol" with lore "&8&oDaño: 5" and "&8&oEfecto: Empuje"
+    set slot 3 of {_gui} to iron axe named "&7&lHacha de Bombero" with lore "&8&oDaño: 6"
+    set slot 4 of {_gui} to stone hoe named "&7&lPalo de Golf" with lore "&8&oDaño: 7"
+    # Nota: El slot 8 solo muestra munición, el código da hierro normal
+    set slot 8 of {_gui} to iron nugget named "&7&lMunición (x64)" with lore "&8&oPepitas de hierro para armas."
+
+    # --- FILA 2: ARMADURAS ---
+    set {_chaleco} to leather chestplate named "&7&lChaleco Antibalas" with lore "&8&oProtección: 40%% (Diamante)"
+    dye {_chaleco} gray
+    set slot 9 of {_gui} to {_chaleco}
+    
+    set {_botas} to leather boots named "&7&lBotas Militares" with lore "&8&oProtección: 15%% (Diamante)" and "&8&oEfecto: Inmunidad a Fracturas"
+    dye {_botas} green
+    set slot 10 of {_gui} to {_botas}
+    
+    set {_mascara} to leather helmet named "&7&lMáscara de Gas" with lore "&8&oProtección: Media (Hierro)" and "&8&oEfecto: Anti-Radiación"
+    dye {_mascara} black
+    set slot 11 of {_gui} to {_mascara}
+    
+    set {_chaqueta} to leather chestplate named "&7&lChaqueta de Cazador" with lore "&8&oDefensa: Cuero (Baja)" and "&8&oEfecto: Inmunidad al Frío" and "&8&oMaterial: Cuero Reforzado"
+    dye {_chaqueta} brown
+    set slot 12 of {_gui} to {_chaqueta}
+    
+    set {_pantalones} to leather leggings named "&7&lPantalones de Cazador" with lore "&8&oDefensa: Cuero (Baja)" and "&8&oEfecto: Inmunidad al Frío" and "&8&oMaterial: Cuero Reforzado"
+    dye {_pantalones} brown
+    set slot 13 of {_gui} to {_pantalones}
+
+    # --- FILA 3: MEDICINAS Y COMIDA ---
+    set slot 18 of {_gui} to paper named "&7&lVenda" with lore "&8&oCura: 2 Corazones" and "&8&oEfecto: Detiene Sangrado"
+    set slot 19 of {_gui} to redstone named "&7&lBotiquín" with lore "&8&oUso: Cura Piernas Rotas" and "&8&oOrigen: Caídas"
+    set slot 20 of {_gui} to end rod named "&7&lAntídoto" with lore "&8&oUso: Cura Infección Zombie"
+    set slot 21 of {_gui} to cookie named "&7&lBarrita Energética" with lore "&8&oEfecto: Velocidad I (40s)"
+    set slot 22 of {_gui} to mushroom stew named "&7&lLata de Conservas" with lore "&8&oEfecto: Regeneración I (20s)"
+    set slot 23 of {_gui} to dried kelp named "&7&lCarne Seca" with lore "&8&oEfecto: Salud Instantánea (4❤)"
+    
+    # Aguas
+    set slot 24 of {_gui} to potion of weakness named "&7&lAgua Sucia" with lore "&8&oPeligrosa: Puede causar infección/sed."
+    set slot 25 of {_gui} to potion of slowness named "&7&lAgua Purificada" with lore "&8&oSegura: Hidratación máxima."
+
+    # --- FILA 4: UTILIDADES Y REFUGIO ---
+    set slot 27 of {_gui} to tripwire hook named "&7&lLinterna" with lore "&8&oEfecto: Visión Nocturna" and "&8&oDuración: Infinita (en mano)"
+    set slot 28 of {_gui} to chest named "&7&lMochila" with lore "&8&oHaz clic derecho o usa /mochila"
+    set slot 29 of {_gui} to white bed named "&7&lKit de Acampada" with lore "&8&oUso: Clic derecho en suelo" and "&8&oContiene: Cama, Horno, Mesa y Hoguera"
+    set slot 30 of {_gui} to redstone torch named "&7&lBengala de Distracción" with lore "&8&oUso: Lanzar para atraer zombies"
+    set slot 31 of {_gui} to heavy weighted pressure plate named "&7&lTrampa de Osos" with lore "&8&oUso: Colocar en el suelo" and "&8&oEfecto: Inmoviliza y daña"
+    set slot 32 of {_gui} to oak trapdoor named "&7&lBarricada de Tablones" with lore "&8&oUso: Colocar en ventanas" and "&8&oResistencia: Media"
+    set slot 33 of {_gui} to iron door named "&7&lPuerta Reforzada" with lore "&8&oUso: Entrada Segura" and "&8&oEfecto: Mecanismo manual" and "&8&oResistencia: Muy Alta"
+
+    # --- FILA 5: COMPONENTES ---
+    set slot 36 of {_gui} to lightning rod named "&7&lCañón de Arma" with lore "&8&oComponente de ensamblaje"
+    set slot 37 of {_gui} to iron ingot named "&7&lPieza Metálica" with lore "&8&oComponente de ensamblaje"
+    set slot 38 of {_gui} to ink sac named "&7&lCargador" with lore "&8&oComponente de ensamblaje"
+
+    # --- FILA 6: HERRAMIENTAS ADMIN ---
+    set slot 49 of {_gui} to tnt named "&c&lPURGAR ZOMBIES" with lore "&7Elimina todos los zombies" and "&7del servidor." and "&c¡Usar con precaución!"
+    set slot 53 of {_gui} to barrier named "&cCerrar"
+
+    open {_gui} to {_p}
+
+# --- EVENTOS DEL MENÚ ---
+on inventory click:
+    if name of event-inventory is "Panel de Administrador":
+        cancel event
+        
+        if event-slot is not air:
+            if name of event-slot is "&7":
+                stop
+                
+            # --- 1. HERRAMIENTAS DE PURGA ---
+            if index of event-slot is 49:
+                close player's inventory
+                set {_contador} to 0
+                send "&e&l⚠ &eIniciando protocolo de limpieza masiva..." to player
+                
+                loop all worlds:
+                    loop all living entities in loop-world:
+                        if loop-entity is a zombie:
+                            teleport loop-entity to location at 0, -500, 0 in loop-world
+                            delete loop-entity
+                            add 1 to {_contador}
+                
+                if {_contador} > 0:
+                    broadcast "&c&l☢ &4&lPURGA COMPLETADA &c&l☢"
+                    broadcast "&7Se han eliminado &c%{_contador}% &7zombies de la faz de la tierra."
+                    play sound "entity.wither.death" to all players
+                else:
+                    send "&aEl mundo parece estar limpio. No se encontraron zombies." to player
+                stop
+
+            if index of event-slot is 53:
+                close player's inventory
+                stop
+
+            # --- 2. ENTREGA DE ÍTEMS ---
+            # Munición (Hierro normal)
+            if index of event-slot is 8:
+                give player 64 iron nugget
+                stop
+
+            # Armaduras con Color (Necesitan lógica especial para mantener propiedades)
+            if index of event-slot is 9:
+                set {_i} to leather chestplate named "&7&lChaleco Antibalas" with lore "&8&oProtección: 40%% (Diamante)"
+                dye {_i} gray
+                give player {_i}
+                stop
+            if index of event-slot is 10:
+                set {_i} to leather boots named "&7&lBotas Militares" with lore "&8&oProtección: 15%% (Diamante)" and "&8&oEfecto: Inmunidad a Fracturas"
+                dye {_i} green
+                give player {_i}
+                stop
+            if index of event-slot is 11:
+                set {_i} to leather helmet named "&7&lMáscara de Gas" with lore "&8&oProtección: Media (Hierro)" and "&8&oEfecto: Anti-Radiación"
+                dye {_i} black
+                give player {_i}
+                stop
+            if index of event-slot is 12:
+                set {_i} to leather chestplate named "&7&lChaqueta de Cazador" with lore "&8&oDefensa: Cuero (Baja)" and "&8&oEfecto: Inmunidad al Frío" and "&8&oMaterial: Cuero Reforzado"
+                dye {_i} brown
+                give player {_i}
+                stop
+            if index of event-slot is 13:
+                set {_i} to leather leggings named "&7&lPantalones de Cazador" with lore "&8&oDefensa: Cuero (Baja)" and "&8&oEfecto: Inmunidad al Frío" and "&8&oMaterial: Cuero Reforzado"
+                dye {_i} brown
+                give player {_i}
+                stop
+
+            # Resto de ítems (Copia exacta del ítem visualizado, que ahora tiene el Lore correcto)
+            give player event-slot
+            play sound "entity.item.pickup" at player
+            send "&aHas recibido: %name of event-slot%" to player
