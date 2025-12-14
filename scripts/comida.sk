@@ -1,0 +1,24 @@
+# -----------------------------------------------------------------------
+# COMIDA.SK - EFECTOS DE CONSUMIBLES
+# -----------------------------------------------------------------------
+# Aplica efectos al consumir alimentos personalizados.
+
+on load:
+    set {food.barrita} to cookie named "&7&lBarrita Energética"
+    set {food.lata} to mushroom stew named "&7&lLata de Conservas"
+    set {food.carne} to dried kelp named "&7&lCarne Seca"
+
+on consume:
+    if player's tool is {food.barrita}:
+        remove speed from player
+        apply speed 1 to player for 40 seconds
+
+    else if player's tool is {food.lata}:
+        remove regeneration from player
+        apply regeneration 1 to player for 20 seconds
+        wait 1 tick
+        remove bowl from player
+
+    else if player's tool is {food.carne}:
+        heal player by 4 hearts
+        play sound "entity.player.levelup" with volume 0.5 and pitch 2 at player

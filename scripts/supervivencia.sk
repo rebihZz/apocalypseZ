@@ -1,0 +1,100 @@
+# -----------------------------------------------------------------------
+# SUPERVIVENCIA.SK - SALUD, SANGRADO Y FRACTURAS
+# -----------------------------------------------------------------------
+# Gestiona daños realistas, infecciones zombie y sistemas de curación.
+
+# --- SECCIÓN 1: DAÑOS Y ESTADOS ---
+on damage:
+    if victim is a player:
+        # A. FRACTURAS POR CAÍDA
+        if damage cause is fall:
+            if damage >= 4:
+                # Inmunidad con Botas Militares
+                if name of victim's boots is "&7&lBotas Militares":
+                    stop
+                
+                # Aplicar fractura
+                apply slowness 4 to victim for 9999 days
+                set {fractura::%uuid of victim%} to true
+                send "&c[SALUD] &4¡Te has roto las piernas! &7Usa un Botiquín." to victim
+                play sound "entity.zombie.break_wooden_door" with pitch 2 at victim
+
+        # B. INFECCIÓN Y SANGRADO (ZOMBIES)
+        if attacker is a zombie:
+            # Probabilidad de infección (5%)
+            if {infectado::%uuid of victim%} is not set:
+                if chance of 5%:
+                    set {infectado::%uuid of victim%} to true
+                    send "&2[VIRUS] &a¡TE HAN INFECTADO! &7Hueles a carne fresca..." to victim
+                    play sound "entity.zombie.infect" at victim
+
+            # Probabilidad de sangrado (25%)
+            if chance of 25%:
+                if {sangrado::%uuid of victim%} is not set:
+                    set {sangrado::%uuid of victim%} to true
+                    send "&c[SALUD] &c¡Estás sangrando! &7Dejarás un rastro..." to victim
+
+# --- SECCIÓN 2: BUCLE DE EFECTOS ---
+every 3 seconds: 
+    loop all players:
+        # Efecto Infección: Mareo y daño leve
+        if {infectado::%uuid of loop-player%} is true:
+            apply nausea 1 to loop-player for 2 seconds
+            damage loop-player by 0.5 hearts
+            
+        # Efecto Sangrado: Daño y rastro visual
+        if {sangrado::%uuid of loop-player%} is true:
+            damage loop-player by 0.5 hearts
+            send "&c[SALUD] &cPierdes sangre..." to loop-player
+            
+            # Lógica de manchar el suelo
+            set {_loc} to location of loop-player
+            set {_bloque} to block at {_loc}
+            set {_suelo} to block below {_loc}
+            
+            if {_bloque} is air:
+                if {_suelo} is solid:
+                    if {_suelo} is not barrier or glass or ice:
+                        set block at {_loc} to redstone wire
+                        play sound "block.honey_block.step" at {_loc}
+
+        # Mensaje recordatorio de fractura
+        if {fractura::%uuid of loop-player%} is true:
+            send "&c[SALUD] &7Tus piernas rotas te impiden correr." to loop-player
+
+# --- SECCIÓN 3: CURAS ---
+on right click:
+    # Venda (Cura sangrado)
+    if player's tool is paper named "&7&lVenda":
+        if health of player < max health of player:
+            remove 1 of tool from player
+            heal player by 2 hearts
+            if {sangrado::%uuid of player%} is true:
+                delete {sangrado::%uuid of player%}
+                send "&a[SALUD] &fSangrado detenido." to player
+        else if {sangrado::%uuid of player%} is true:
+            remove 1 of tool from player
+            delete {sangrado::%uuid of player%}
+            send "&a[SALUD] &fSangrado detenido." to player
+
+    # Antídoto (Cura infección)
+    if player's tool is end rod named "&7&lAntídoto":
+        if {infectado::%uuid of player%} is true:
+            remove 1 of tool from player
+            delete {infectado::%uuid of player%}
+            send "&a[VIRUS] &fInfección curada." to player
+            remove nausea from player
+
+    # Botiquín (Cura fracturas)
+    if player's tool is redstone named "&7&lBotiquín":
+        if {fractura::%uuid of player%} is true:
+            remove 1 of tool from player
+            delete {fractura::%uuid of player%}
+            remove slowness from player
+            send "&a[SALUD] &fPiernas curadas." to player
+
+# --- SECCIÓN 4: BLOQUEOS ---
+# Impide regeneración natural por comida (Hardcore)
+on heal:
+    if heal cause is satiated:
+        cancel event
