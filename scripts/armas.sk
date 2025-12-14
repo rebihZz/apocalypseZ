@@ -1,0 +1,167 @@
+# -----------------------------------------------------------------------
+# SISTEMA DE COMBATE Y UTILIDADES TÁCTICAS
+# -----------------------------------------------------------------------
+options:
+    dano_pistola: 4
+    dano_rifle: 8
+    alcance_pistola: 25 
+    alcance_rifle: 50
+
+# --- 0. RECETAS TÁCTICAS (CORREGIDO: LISTAS) ---
+on load:
+    register new shapeless recipe for redstone torch named "&cBengala de Distracción" with lore "&7Uso: &eLanzar para atraer zombies" using redstone torch and gunpowder with id "craft_bengala"
+    register new shaped recipe for heavy weighted pressure plate named "&8Trampa de Osos" with lore "&7Uso: &eColocar en el suelo" and "&7Efecto: &cInmoviliza y daña" using air, air, air, air, air, air, iron ingot, iron ingot and iron ingot with id "craft_trampa"
+
+# --- 1. ARMAS DE FUEGO ---
+on right click:
+    if player's tool is iron horse armor or golden horse armor:
+        set {_nombre} to uncolored name of player's tool
+        
+        if {_nombre} contains "Pistola" or "Rifle":
+            cancel event
+            if {cooldown_arma::%uuid of player%} is set:
+                set {_diff} to difference between {cooldown_arma::%uuid of player%} and now
+                if {_nombre} contains "Pistola":
+                    if {_diff} < 0.5 seconds:
+                        stop
+                else:
+                    if {_diff} < 0.2 seconds:
+                        stop
+            set {cooldown_arma::%uuid of player%} to now
+
+            if player has iron nugget:
+                remove 1 iron nugget from player
+                play sound "entity.firework_rocket.blast" with volume 2 and pitch 1 at player
+                show 5 large smoke at location 1 meter in front of player's head
+                
+                loop entities in radius 40 around player:
+                    if loop-entity is a zombie:
+                        set target of loop-entity to player
+
+                if {_nombre} contains "Pistola":
+                    set {_distancia} to {@alcance_pistola}
+                    set {_daño} to {@dano_pistola}
+                    set {_particula} to electric spark
+                else:
+                    set {_distancia} to {@alcance_rifle}
+                    set {_daño} to {@dano_rifle}
+                    set {_particula} to crit
+                
+                set {_loc} to player's eye location
+                loop {_distancia} times:
+                    set {_loc} to location loop-value-1 meters in front of player's eyes
+                    show 1 {_particula} at {_loc}
+                    if block at {_loc} is not air:
+                        if block at {_loc} is not water:
+                            if block at {_loc} is not tall grass:
+                                play sound "block.stone.hit" at {_loc}
+                                stop loop
+                    
+                    set {_victimas::*} to entities in radius 1.5 of {_loc}
+                    loop {_victimas::*}:
+                        set {_enemigo} to loop-value-2
+                        if "%uuid of {_enemigo}%" is not "%uuid of player%":
+                            if {_enemigo} is a living entity:
+                                damage {_enemigo} by {_daño}
+                                play sound "entity.player.hurt" at {_enemigo}
+                                show 15 red dust at location of {_enemigo}
+                                stop trigger
+            else:
+                send action bar "&c¡Sin munición!" to player
+                play sound "block.dispenser.fail" at player
+
+# --- 2. ARMAS MELEE ---
+on damage:
+    if attacker is a player:
+        if name of attacker's tool is "&6Bate de Béisbol":
+            set damage to 5
+            push victim in direction of attacker at speed 0.8
+            play sound "entity.player.attack.knockback" at attacker
+        else if name of attacker's tool is "&cHacha de Bombero":
+            set damage to 6
+            play sound "item.axe.scrape" at attacker
+        else if name of attacker's tool is "&7Palo de Golf":
+            set damage to 7
+            play sound "block.anvil.land" with pitch 0.5 at attacker
+            show 10 crit at location of victim
+
+# --- 3. ARMADURAS ---
+on damage:
+    if victim is a player:
+        set {_reduccion} to 0
+        if name of victim's chestplate is "&8Chaleco Antibalas":
+            add (damage * 0.40) to {_reduccion}
+        if name of victim's boots is "&2Botas Militares":
+            add (damage * 0.15) to {_reduccion}
+        if name of victim's helmet is "&bMáscara de Gas":
+            add (damage * 0.10) to {_reduccion}
+        if {_reduccion} > 0:
+            remove {_reduccion} from damage
+
+# --- 4. BENGALA ---
+on right click with redstone torch:
+    if name of player's tool is "&cBengala de Distracción":
+        cancel event
+        remove 1 of player's tool from player
+        shoot snowball from player at speed 1.5
+        set item of shot projectile to redstone torch
+        set metadata "tipo" of shot projectile to "bengala"
+        play sound "entity.tnt.primed" at player
+
+on projectile hit:
+    if metadata "tipo" of event-projectile is "bengala":
+        set {_loc} to location of event-projectile
+        play sound "block.bell.use" with volume 2 at {_loc}
+        show 50 flame at {_loc}
+        show 50 lava pop at {_loc}
+        
+        loop entities in radius 30 around {_loc}:
+            if loop-entity is a zombie:
+                set target of loop-entity to null
+                set {_vector} to vector from location of loop-entity to {_loc}
+                push loop-entity {_vector} at speed 0.2
+                
+        spawn a villager at {_loc}
+        set {_cebo} to last spawned entity
+        apply invisibility 1 to {_cebo} for 10 seconds
+        apply slowness 255 to {_cebo} for 10 seconds
+        set max health of {_cebo} to 100
+        set health of {_cebo} to 100
+        set name of {_cebo} to "&cSeñuelo"
+        wait 10 seconds
+        kill {_cebo}
+
+# --- 5. TRAMPA ---
+on right click with heavy weighted pressure plate:
+    if name of tool is "&8Trampa de Osos":
+        cancel event
+        remove 1 of tool from player
+        set block at location of event-block to heavy weighted pressure plate
+        set {trampa::%location of event-block%} to true
+        send "&7Trampa colocada." to player
+
+on step on heavy weighted pressure plate:
+    if {trampa::%location of event-block%} is true:
+        play sound "entity.iron_golem.break" at event-block
+        play sound "entity.player.hurt" at event-entity
+        damage event-entity by 3 hearts
+        apply slowness 10 to event-entity for 5 seconds
+        apply blindness 1 to event-entity for 2 seconds
+        if event-entity is a player:
+            set {sangrado::%uuid of event-entity%} to true
+            send "&c[SALUD] &4¡Has pisado una trampa!" to event-entity
+        set block at location of event-block to air
+        delete {trampa::%location of event-block%}
+        drop 1 heavy weighted pressure plate named "&8Trampa de Osos (Inutilizada)" at location of event-block
+
+# --- 6. HUD MUNICIÓN ---
+every 1 second:
+    loop all players:
+        set {_tool} to loop-player's tool
+        if {_tool} is iron horse armor or golden horse armor:
+            if name of {_tool} contains "Pistola" or "Rifle":
+                set {_balas} to amount of iron nugget in loop-player's inventory
+                if {_balas} > 0:
+                    send action bar "&e🔫 Munición: &f%{_balas}%" to loop-player
+                else:
+                    send action bar "&c&l¡SIN MUNICIÓN!" to loop-player
