@@ -1,0 +1,138 @@
+# -----------------------------------------------------------------------
+# ZOMBIES.SK - IA, ENEMIGOS Y SISTEMA DE RUIDO
+# -----------------------------------------------------------------------
+# Incluye: Clases de zombies, Recompensas, IA Sensitiva y Mecánicas de Ruido.
+
+# --- SECCIÓN 1: FILTRO DE SPAWN ---
+on spawn:
+    if event-entity is skeleton or creeper or spider or enderman or witch or phantom:
+        cancel event
+
+# --- SECCIÓN 2: CLASES DE ZOMBIES ---
+on spawn of zombie:
+    # Marcar zombies de granja para no dar dinero
+    if spawn reason is spawner:
+        set metadata "es_granja" of event-entity to true
+    
+    if event-entity is not a player:
+        wait 1 tick
+        set {_tipo} to random integer between 1 and 3
+        
+        # Clase 1: Infectado (Estándar)
+        if {_tipo} is 1:
+            set name of event-entity to "&cInfectado"
+            set tool of event-entity to air
+            set helmet of event-entity to chainmail helmet
+            set chestplate of event-entity to leather chestplate
+            
+        # Clase 2: Corredor (Veloz pero débil)
+        else if {_tipo} is 2:
+            set name of event-entity to "&4Corredor"
+            apply speed 2 to event-entity for 9999 seconds
+            set helmet of event-entity to leather helmet
+            set boots of event-entity to golden boots
+            set tool of event-entity to air
+            
+        # Clase 3: Tanque (Lento y resistente)
+        else if {_tipo} is 3:
+            set name of event-entity to "&8Tanque"
+            set max health of event-entity to 40
+            set health of event-entity to 40
+            set chestplate of event-entity to iron chestplate
+            set tool of event-entity to stone sword
+            apply slowness 1 to event-entity for 9999 seconds
+
+# --- SECCIÓN 3: SISTEMA DE RECOMPENSAS ---
+on death of zombie:
+    if attacker is a player:
+        if metadata "es_granja" of victim is true:
+            stop
+        set {_premio} to 0
+        set {_nombre} to uncolored name of victim
+        
+        if {_nombre} contains "Infectado":
+            set {_premio} to 15
+        else if {_nombre} contains "Corredor":
+            set {_premio} to 20
+        else if {_nombre} contains "Tanque":
+            set {_premio} to 30
+        else:
+            set {_premio} to 10
+            
+        if {_premio} > 0:
+            add {_premio} to {dinero::%uuid of attacker%}
+
+# --- SECCIÓN 4: IA SENSITIVA (VISTA Y OLFATO) ---
+every 5 seconds:
+    loop all players:
+        set {_p} to loop-player
+        if {_p}'s gamemode is survival or adventure:
+            # Radio de 20m para vista/olfato pasivo
+            loop all zombies in radius 20 around {_p}:
+                
+                # --- CORRECCIÓN 1: USO DE LOOP-VALUE-2 ---
+                set {_z} to loop-value-2 
+                # -----------------------------------------
+                
+                if target of {_z} is set:
+                    continue
+                
+                set {_detectado} to false
+                
+                # A. Olfato (Sangre) - Rango total
+                if {infectado::%uuid of {_p}%} is set:
+                    set {_detectado} to true
+                    if chance of 20%:
+                        show 3 angry villager at location of {_z}
+                
+                # B. Vista (Sigilo)
+                else:
+                    if {_p} is not sneaking:
+                        set {_detectado} to true
+                    else if distance between {_p} and {_z} < 3:
+                        set {_detectado} to true
+                
+                if {_detectado} is true:
+                    set target of {_z} to {_p}
+
+# --- SECCIÓN 5: SISTEMA DE RUIDO (OÍDO) ---
+
+# Función auxiliar para atraer zombies por sonido
+function generarRuido(p: player, radio: number, nivel: text):
+    set {_atraidos} to 0
+    loop all zombies in radius {_radio} around {_p}:
+        set {_z} to loop-entity
+        if target of {_z} is not set:
+            set target of {_z} to {_p}
+            add 1 to {_atraidos}
+            if chance of 50%:
+                show 1 note at location of {_z}
+    
+    if {_nivel} is "alto":
+        if {_atraidos} > 0:
+            send action bar "&c🔊 ¡Hiciste ruido! (%{_atraidos}% zombies alertados)" to {_p}
+
+# A. Ruido al Correr (Sprint)
+every 2 seconds:
+    loop all players:
+        if loop-player is sprinting:
+            if loop-player's gamemode is survival or adventure:
+                
+                # --- CORRECCIÓN 2: CHEQUEO ROBUSTO DE BLOQUES ---
+                set {_suelo} to "%type of block below loop-player%"
+                if {_suelo} does not contain "wool":
+                    if {_suelo} does not contain "carpet":
+                        generarRuido(loop-player, 15, "medio")
+                # -----------------------------------------------
+
+# B. Ruido al Romper (Cristales y Puertas)
+on break:
+    if event-block is glass or glass pane or oak door or iron door:
+        generarRuido(player, 30, "alto")
+
+# C. Ruido al Colocar (Bloques metálicos pesados)
+on place:
+    if event-block is anvil or iron block or heavy weighted pressure plate:
+        generarRuido(player, 25, "alto")
+    else if event-block is iron door:
+        generarRuido(player, 25, "alto")

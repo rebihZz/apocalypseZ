@@ -1,0 +1,27 @@
+# -----------------------------------------------------------------------
+# AMBIENTE.SK - INMERSIÓN VISUAL Y AUDITIVA
+# -----------------------------------------------------------------------
+
+# 1. SANGRE EN PANTALLA (DAÑO CRÍTICO)
+# Muestra un borde rojo y latidos cuando la salud baja del 20%
+on damage:
+    if victim is a player:
+        wait 1 tick
+        if health of victim <= 2: # 1 Corazón o menos
+            send title "&4&l⚠ HERIDO DE MUERTE ⚠" with subtitle "&cBusca vendas o morirás..." to victim for 2 seconds
+            play sound "block.sculk_sensor.heartbeat" with volume 2 and pitch 0.5 at victim
+        else if health of victim <= 4: # 2 Corazones
+            send title "&c&l¡HERIDO!" with subtitle "" to victim for 1 second
+
+# 2. APAGÓN DE ANTORCHAS (TORMENTAS)
+# Durante tormentas eléctricas, las luces parpadean o se "apagan" (efecto sonoro/visual)
+every 5 seconds:
+    if weather is thunder:
+        loop all players:
+            # Si el jugador está cerca de luz artificial
+            if light level at loop-player > 11:
+                if chance of 30%:
+                    # Efecto de parpadeo
+                    play sound "block.conduit.deactivate" with volume 0.5 at loop-player
+                    send action bar "&8⚠ La tormenta está afectando la electricidad..." to loop-player
+                    apply blindness 1 to loop-player for 2 seconds
